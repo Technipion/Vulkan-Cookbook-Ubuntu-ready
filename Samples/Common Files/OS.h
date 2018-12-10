@@ -34,6 +34,9 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#elif defined __linux
+#include <unistd.h>
+#include <xcb/xcb.h>
 #endif
 
 #include "Common.h"

@@ -179,6 +179,143 @@ namespace VulkanCookbook {
     Sample.Deinitialize();
   }
 
+
+#elif defined VK_USE_PLATFORM_XCB_KHR
+
+  WindowFramework::WindowFramework( const char               * window_title,
+                                    int                        x,
+                                    int                        y,
+                                    int                        width,
+                                    int                        height,
+                                    VulkanCookbookSampleBase & sample ) :
+    WindowParams(),
+    Sample( sample ),
+    Created( false ) {
+    
+    xcb_connection_t *c;
+    xcb_screen_t     *screen;
+    xcb_window_t      win;
+    uint32_t          mask = 0;
+    uint32_t          values[2];
+
+    c = xcb_connect (NULL, NULL);
+
+    screen = xcb_setup_roots_iterator (xcb_get_setup (c)).data;
+
+    win = xcb_generate_id(c);
+    
+    mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+    values[0] = screen->white_pixel;
+    values[1] = XCB_EVENT_MASK_EXPOSURE       | XCB_EVENT_MASK_BUTTON_PRESS   |
+                XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION |
+                XCB_EVENT_MASK_KEY_PRESS      | XCB_EVENT_MASK_KEY_RELEASE;
+
+    xcb_create_window(c,
+                      XCB_COPY_FROM_PARENT,
+                      win,
+                      screen->root,
+                      x, y,
+                      width, height,
+                      10,
+                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                      screen->root_visual,
+                      mask, values);
+
+    xcb_map_window (c, win);
+    
+    xcb_change_property(c, XCB_PROP_MODE_REPLACE, win, XCB_ATOM_WM_NAME,
+                      XCB_ATOM_STRING, 8, strlen(window_title), window_title);
+
+    xcb_flush (c);
+    
+    WindowParams.Connection = c;
+    WindowParams.Window = win;
+
+    Created = true;
+  }
+  
+  WindowFramework::~WindowFramework() {
+    if( WindowParams.Window ) {
+      xcb_destroy_window(WindowParams.Connection, WindowParams.Window);
+    }
+
+    if( WindowParams.Connection ) {
+      xcb_disconnect(WindowParams.Connection);
+    }
+  }
+  
+  void WindowFramework::Render() {
+    
+    if( Created &&
+        Sample.Initialize( WindowParams ) ) {
+      
+      xcb_generic_event_t *e;
+      bool loop = true;
+      
+      while ( loop ) {
+        if (e = xcb_poll_for_event(WindowParams.Connection)) {
+          switch (e->response_type & ~0x80) {
+            
+            case XCB_BUTTON_PRESS:
+            {
+              xcb_button_press_event_t *ev = (xcb_button_press_event_t *)e;
+              
+              switch (ev->detail) {
+                case 4:
+                  Sample.MouseWheel( 0.5f );
+                  break;
+                case 5:
+                  Sample.MouseWheel( - 0.5f );
+                  break;
+                default:
+                  Sample.MouseClick( static_cast<int>(ev->detail), true );
+              }
+              break;
+            }
+            case XCB_BUTTON_RELEASE:
+            {
+              xcb_button_release_event_t *ev = (xcb_button_release_event_t *)e;
+              
+              Sample.MouseClick( static_cast<int>(ev->detail), false );
+              break;
+            }
+            case XCB_MOTION_NOTIFY:
+            {
+              xcb_motion_notify_event_t *ev = (xcb_motion_notify_event_t *)e;
+              
+              Sample.MouseMove( static_cast<int>(ev->event_x), static_cast<int>(ev->event_y) );
+              break;
+            }
+            case XCB_KEY_PRESS:
+            {
+              xcb_key_press_event_t *ev = (xcb_key_press_event_t *)e;
+              
+              if (ev->detail == 9) { // key = ESCAPE
+                loop = false;
+                xcb_change_property(WindowParams.Connection, XCB_PROP_MODE_REPLACE, WindowParams.Window,
+                                    XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8,
+                                    strlen("CLOSING..."), "CLOSING...");
+              }
+              break;
+            }
+            default:
+              printf("Uncatched event: %d\n", e->response_type);
+              break;
+        }
+        free (e);
+    } else {
+          if( Sample.IsReady() ) {
+            Sample.UpdateTime();
+            Sample.Draw();
+            Sample.MouseReset();
+          }
+        }
+    }
+
+    Sample.Deinitialize();
+    }
+  }
+
 #endif
 
 } // namespace VulkanCookbook

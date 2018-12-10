@@ -234,15 +234,17 @@ namespace VulkanCookbook {
       if( !CreateFence( *LogicalDevice, true, *drawing_finished_fence ) ) {
         return false;
       }
-
-      FramesResources.emplace_back(
+      
+      auto framebuffer_destroyer = VkDestroyer(VkFramebuffer)();
+      
+      FrameResources frameResources = {
         command_buffer[0],
-        std::move( image_acquired_semaphore ),
-        std::move( ready_to_present_semaphore ),
-        std::move( drawing_finished_fence ),
-        std::move( depth_attachment ),
-        VkDestroyer(VkFramebuffer)()
-      );
+        image_acquired_semaphore,
+        ready_to_present_semaphore,
+        drawing_finished_fence,
+        depth_attachment,
+        framebuffer_destroyer};
+      FramesResources.emplace_back(std::move(frameResources));
     }
 
     if( !CreateSwapchain( swapchain_image_usage, use_depth, depth_attachment_usage ) ) {
