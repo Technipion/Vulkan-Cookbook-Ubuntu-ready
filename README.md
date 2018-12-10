@@ -1,3 +1,30 @@
+# About this Repository
+This is my personal fork of the official repository for the excellent Vulkan Cookbook by Packt Publishing. The original README can be found below. I added some minor changes to support the current version of Ubuntu (18.04) using XCB.
+
+## Getting the dependencies
+Run apt and install the dependencies as described in the book. Then get the [Vulkan SDK](https://vulkan.lunarg.com) either as tarball or as prebuild packages. Just follow the instructions on the website.
+
+## Building the examples
+Clone this repo or download and extract it. Open a terminal in the main folder and enter the following commands:
+```
+user@machine:~/path_to_repo/Vulkan-Cookbook-Ubuntu-ready/mkdir build
+user@machine:~/path_to_repo/Vulkan-Cookbook-Ubuntu-ready/cd build
+user@machine:~/path_to_repo/Vulkan-Cookbook-Ubuntu-ready/build/cmake ..
+user@machine:~/path_to_repo/Vulkan-Cookbook-Ubuntu-ready/build/make
+```
+This will compile the framework and link the examples as executable files into a subfolder "build".
+
+
+Note that some features are still missing:
+* The window does not react to resizing commands. If you resize the application's window the program will most likely crash.
+* The window also does not react to destroy commands. Clicking the 'x' button will close the window but not halt the application. However you can use the `Escape` key for a controlled shutdown.
+* Some examples will crash with a segmentation fault. I did not have the time yet to search the error and fix it.
+
+## Contribute
+If you find any issues or have prepared any bug fixes don't be shy and open a new issue. I will try to look into it asap.
+
+----------
+
 # Vulkan Cookbook
 This is the code repository for [Vulkan Cookbook](https://www.packtpub.com/game-development/vulkan-cookbook?utm_source=github&utm_medium=repository&utm_campaign=9781786468154), published by [Packt](https://www.packtpub.com/). All the example workflows that are mentioned in the book are present in the package.
 
